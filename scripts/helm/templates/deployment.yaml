@@ -22,17 +22,11 @@ spec:
   selector:
     matchLabels: 
       app: {{ .name }}-job
-      {{- if .labels.jobgroup }}
-      jobgroup: {{ .labels.jobgroup }}
-      {{- end }}
       app.kubernetes.io/managed-by: {{ $.Release.Service }}
   template:
     metadata:
       labels: 
         app: {{ .name }}-job
-        {{- if .labels.jobgroup }}
-        jobgroup: {{ .labels.jobgroup }}
-        {{- end }}
         app.kubernetes.io/managed-by: {{ $.Release.Service }}
     spec:
       restartPolicy: Always
