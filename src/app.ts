@@ -52,28 +52,30 @@ export default class App {
             .description("Consumer´s list")
             .action(()=>{
                 const data = [["Index", "Name", "Topic"]];
-                for (let index = 0; index < this.commands.length; index += 1) {
-                    const props = this.commands[index].props;
+                this.commands.filter((c)=> c.props.topic.length > 0 ).forEach(({props}, index)=>{
                     data.push([
-                      index.toString(),
-                      props.name,
-                      props.topic,
+                        index.toString(),
+                        props.name,
+                        props.topic,
                     ]);
-                }
+                });
                 
                 this.log(`\n${table(data)}`);  
                 process.exit(0);
             });  
-        this.commands.forEach((execute)=>{
-            const command = execute.props;        
+
+        this.commands.forEach(({ props: command })=>{       
             this.program
                 .command(command.name)
                 .description(`execute ${command.name}`);
         }); 
     }
 
-    private async executeTask(execute: IConsumer, {message, partition, topic}: EachMessagePayload, callbackError = true){
-        const command = execute.props;
+    private async executeTask(
+        {props: command}: IConsumer, 
+        {message, partition, topic}: EachMessagePayload, 
+        callbackError = true
+    ){
         const apmTransacion = this.apmClient.Agent?.startTransaction(command.name);
         let apmTransacionResult = "sucess";
         let errorExec: Error | null = null;
@@ -197,15 +199,16 @@ export default class App {
                 allowAutoTopicCreation: true,
             });
             await consumer.connect();
-            this.commands.forEach(async(job)=>{
-                const command = job.props;
-                if((command.name === commandName || commandName.length === 0 ) && command.topic.length > 0 ){
-                    try {
-                        await consumer.subscribe({topic: command.topic, fromBeginning: true});
-                        Logger.info(`Consumer ${command.topic} Starting groupId: ${groupId}`);
-                    } catch (error) {
-                        Logger.error(`Failed to start consumer ${command.topic}`, error);
-                    }
+            const commands = this.commands.filter(({props: command})=> 
+                (command.name === commandName || commandName.length === 0) && 
+                command.topic.length > 0
+            );
+            commands.forEach(async({props: command})=>{
+                try {
+                    await consumer.subscribe({topic: command.topic, fromBeginning: true});
+                    Logger.info(`Consumer ${command.topic} Starting groupId: ${groupId}`);
+                } catch (error) {
+                    Logger.error(`Failed to start consumer ${command.topic}`, error);
                 }
             });
             await consumer.run({
@@ -229,7 +232,7 @@ export default class App {
             });
 
         const argv = process.argv;
-        const commands = this.commands.filter((c => argv.includes(c.props.name)));
+        const commands = this.commands.filter(({props: command}) => argv.includes(command.name));
         this.program.parse(argv);
         if (commands.length > 0) {
             this.startConsumer(commands[0].props.name);
