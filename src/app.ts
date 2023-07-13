@@ -52,7 +52,8 @@ export default class App {
             .description("Consumer´s list")
             .action(()=>{
                 const data = [["Index", "Name", "Topic"]];
-                this.commands.filter((c)=> c.props.topic.length > 0 ).forEach(({props}, index)=>{
+                this.commands.filter(({props: command})=> command.topic.length > 0)
+                .forEach(({props}, index)=>{
                     data.push([
                         index.toString(),
                         props.name,
@@ -105,9 +106,7 @@ export default class App {
             apmTransacion.result = apmTransacionResult;
             apmTransacion?.end();
         }
-        if(errorExec != null && callbackError){
-            throw errorExec;
-        }
+        if(errorExec != null && callbackError) throw errorExec;
     }
 
     private async consumerAsync(
